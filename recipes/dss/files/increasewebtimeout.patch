@@ -1,0 +1,12 @@
+--- a/core/sessionmanager.cpp
++++ b/core/sessionmanager.cpp
+@@ -52,7 +52,7 @@ namespace dss {
+     m_EventInterpreter(_eventInterpreter),
+     m_pSecurity(_pSecurity),
+     m_Salt(_salt),
+-    m_timeoutSecs(60)
++    m_timeoutSecs(32400) // 9 hours
+   {
+     m_NextSessionID = rand();
+     std::ostringstream ostr;
+

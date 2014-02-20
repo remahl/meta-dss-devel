@@ -1,0 +1,111 @@
+#!/bin/sh
+
+LOGDIR=/var/log/dss
+RESTARTLOG="$LOGDIR/dss-start-stop.log"
+APRTLOG="$LOGDIR/apartment.log"
+
+mkdir -p $LOGDIR
+chmod a+rx $LOGDIR
+
+mkdir -p "/usr/share/dss/data/metering"
+
+OPT_METERING='--prop:/config/subsystems/Metering/enabled=true'
+OPT_SSL='--prop:/config/subsystems/WebServer/sslcert=/etc/ssl/certs/dsscert.pem \
+   --prop:/config/subsystems/WebServices/sslcert=/etc/ssl/certs/dsscert.pem'
+
+# metering disabled without external storage medium
+if [ -e /var/lock/sdcard-failure ]; then
+   OPT_METERING='--prop:/config/subsystems/Metering/enabled=false'
+fi
+
+APP=/usr/bin/dss
+OPTIONS="--prop:/config/jslogdirectory=/var/log/dss \
+         --prop:/config/digestfile=/etc/lighttpd.user \
+         --prop:/config/subsystems/DS485Proxy/loglevel=2 \
+         --prop:/config/subsystems/BusInterfaceHandler/loglevel=2
+         --prop:/config/subsystems/DSSim/loglevel=2 \
+         --prop:/config/subsystems/WebServer/loglevel=2 \
+         --prop:/config/subsystems/WebServices/loglevel=2 \
+         --prop:/config/subsystems/Metering/loglevel=2 \
+         --prop:/config/subsystems/EventInterpreter/loglevel=2 \
+         --prop:/config/subsystems/Apartment/loglevel=2 \
+         --prop:/config/subsystems/WebServer/listen=127.0.0.1:8088,0.0.0.0:8080\
+         --prop:/config/subsystems/WebServer/trustedPort=8088 \
+         --prop:/config/subsystems/WebServer/announcedport=443 \
+         $OPT_METERING \
+         $OPT_SSL \
+         -w /usr/share/dss-web/webroot \
+        "
+
+while [ ! -x $APP ]; do
+    echo "$0: $APP not found"
+    sleep 10;
+done
+
+# Temporary workaround for dSS processes that don't disappear when
+# running 'sv stop dss'. This should rather be fixed in the dss, but
+# for the time being, we have to be sure that there's no dSS process
+# runnning anymore, as otherwise the newly started process won't be
+# able to bind to the webserver port
+killall -9 dss
+sleep 1
+
+wait4sdcard ()
+{
+    RETRY=0
+    READY=0
+    while [ $READY -ne 1 -a $RETRY -lt 10 ]; do
+        for line in `mount -t aufs`; do
+            if [[ "`echo $line | cut -f 3`" == "/usr/share/dss" ]]; then
+                READY=1
+                echo "[`date`] Overlay is already mounted..." >> $APRTLOG
+                break
+            fi
+        done
+        if [[ $READY -eq 0 ]]; then
+            echo "[`date`] Overlay is NOT mounted!" >> $APRTLOG
+        fi
+        let RETRY+=1
+        sleep 1
+    done
+
+    if [ $READY -eq 0 ]; then
+        dss11-ledd-client failure
+        exit 1
+    fi
+}
+
+configtest ()
+{
+    if [[ -s /usr/share/dss/data/apartment.xml ]]; then
+        echo "[`date`] About to start dSS, apartment.xml exists:" >> $APRTLOG
+        ls -al /usr/share/dss/data/apartment.xml >> $APRTLOG
+    elif [[ -f /usr/share/dss/data/apartment.xml ]]; then
+        echo "[`date`] About to start dSS, 0-apartment.xml exists:" >> $APRTLOG
+        ls -al /usr/share/dss/data/apartment.xml >> $APRTLOG
+        ls -al /media/card/sys/dss/data/apartment.xml >> $APRTLOG
+        rm /usr/share/dss/data/apartment.xml
+    else
+        echo "[`date`] About to start dSS, apartment.xml not found" >> $APRTLOG
+        ls -al /usr/share/dss/data/apartment.xml >> $APRTLOG
+        ls -al /media/card/sys/dss/data/apartment.xml >> $APRTLOG
+    fi
+    echo "---------------------------------------------------------" >> $APRTLOG
+
+}
+
+configtest
+dss11-ledd-client ready
+
+echo "####################################" >> $RESTARTLOG
+date >> $RESTARTLOG
+echo "Starting dSS" >> $RESTARTLOG
+
+exec 2>&1
+$APP $OPTIONS
+
+echo "Stopped dSS, RC=$?" >> $RESTARTLOG
+date >> $RESTARTLOG
+echo "####################################" >> $RESTARTLOG
+
+dss11-ledd-client failure

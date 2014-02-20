@@ -1,0 +1,3 @@
+#!/bin/sh
+
+do-perform-dsm-upgrade # now that was easy

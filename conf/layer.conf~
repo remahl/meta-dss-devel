@@ -1,0 +1,22 @@
+# dss11 config
+
+RELEASE_TYPE="devel"
+
+#preferred versions
+PREFERRED_VERSION_linux = "3.0"
+PREFERRED_VERSION_libds485-core = "1.1.0"
+PREFERRED_VERSION_libds485-client = "1.1.0"
+PREFERRED_VERSION_ds485d = "1.1.0"
+PREFERRED_VERSION_libdsm-api = "1.1.0.1"
+
+# should be turned off later
+OE_ALLOW_INSECURE_DOWNLOADS="1"
+
+GLIBC_GENERATE_LOCALES = "en_US.UTF-8 de_DE.UTF-8"
+
+# Which files do we want to parse:
+BBFILES += "${LAYERDIR}/recipes*/*/*.bb ${LAYERDIR}/recipes*/*/*.bbappend"
+
+BBFILE_COLLECTIONS := "oe dss common"
+BBFILE_PATTERN_dss := "^${LAYERDIR}/recipes"
+

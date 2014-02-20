@@ -1,0 +1,12 @@
+/var/log/ds485d/*log {
+    daily
+    size 10M
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+    sv hup ds485d
+    /usr/bin/killall svlogd2 2> /dev/null || true
+    endscript
+}
+

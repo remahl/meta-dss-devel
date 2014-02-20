@@ -1,0 +1,28 @@
+#!/bin/sh
+
+DBDIR=/var/lib/dsa
+LOGDIR=/var/log/dsa
+RESTARTLOG="$LOGDIR/dsa-start-stop.log"
+
+mkdir -p $LOGDIR $DBDIR
+chmod a+rx $LOGDIR
+
+APP=/usr/bin/dsa
+OPTIONS="-c /etc/dsa/dsa.cfg"
+
+while [ ! -x $APP ]; do
+    echo "$0: $APP not found"
+    sleep 10;
+done
+
+echo "####################################" >> $RESTARTLOG
+date >> $RESTARTLOG
+echo "Starting dSA" >> $RESTARTLOG
+
+exec 2>&1
+$APP $OPTIONS
+
+echo "Stopped dSA, RC=$?" >> $RESTARTLOG
+date >> $RESTARTLOG
+echo "####################################" >> $RESTARTLOG
+

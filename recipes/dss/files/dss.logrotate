@@ -1,0 +1,12 @@
+/var/log/dss/*log {
+    daily
+    size 10M
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+    /bin/kill -SIGUSR1 `pidof dss 2>/dev/null` 2> /dev/null || true
+    /usr/bin/killall svlogd2 2> /dev/null || true
+    endscript
+}
+

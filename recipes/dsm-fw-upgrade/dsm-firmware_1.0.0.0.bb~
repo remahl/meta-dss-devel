@@ -1,0 +1,42 @@
+# dSM firmware
+DESCRIPTION = "digitalSTROM Meter firmware"
+HOMEPAGE = "http://developer.digitalstrom.org/download/dsm-firmware-images"
+DEPENDS = "libdsm-api"
+RDEPENDS_${PN} = "dsm-firmware-upgrade"
+
+PR="r2"
+
+SRC_URI[arm.md5sum] = "1c458f3932e7a8142d3fda24fae72cc9"
+SRC_URI[arm.sha256sum] = "0c9193cd40363d4b3bbc1ee69c6021328818272f85770fa7a2d66e40d6898247"
+
+SRC_URI[dsp.md5sum] = "beac91e0c0e6337382867c9210154950"
+SRC_URI[dsp.sha256sum] = "1e00f0d122a5fa90e99994a4902dd76d621c60ac7993e667aa2a7913392a938e"
+
+SRC_URI[cfg.md5sum] = "b66b19a66fc92c76e6ec978864e62961"
+SRC_URI[cfg.sha256sum] = "6a0780ffb958e3a943e54edef5dbfdb78ba238d8b7f4878ee7f17dd4093cd301"
+
+ARM_FW = "dsm-arm-v1.0.0-0-g26e17d4.img"
+DSP_FW = "dsm-dsp-v1.0.0-0-g5b223bc.img"
+
+SRC_URI="\
+    http://developer.digitalstrom.org/download/dsm-firmware-images/1.0/${ARM_FW};name=arm \
+    http://developer.digitalstrom.org/download/dsm-firmware-images/1.0/${DSP_FW};name=dsp \
+    http://developer.digitalstrom.org/download/dsm-firmware-upgrade/dsm-config-update-1.2.tar.gz;name=cfg \
+    file://do-perform-dsm-upgrade;name=script \
+"
+
+S = ${WORKDIR}/dsm-config-update-1.2
+
+inherit autotools
+
+do_install_append() {
+    install -m 0755 -d ${D}${datadir}/${PN}
+    install -m 0755 ${WORKDIR}/${ARM_FW} ${D}${datadir}/${PN}
+    install -m 0755 ${WORKDIR}/${DSP_FW} ${D}${datadir}/${PN}
+
+    install -m 0755 -d ${D}${bindir}
+    install -m 0755 ${WORKDIR}/do-perform-dsm-upgrade ${D}${bindir}/do-perform-dsm-upgrade
+}
+
+FILES_${PN} = "${datadir}/${PN}/* ${bindir}/*"
+

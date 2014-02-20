@@ -1,0 +1,7 @@
+/var/log/mail.log {
+    daily
+    size 1M
+    missingok
+    notifempty
+}
+

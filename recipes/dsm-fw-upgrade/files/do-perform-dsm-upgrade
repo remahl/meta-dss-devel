@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Perform the dSM firmware upgrade in broadcast mode
+
+UPGRADE=/usr/bin/dsm-firmware-upgrade
+LOGDIR=/var/log/dsm-firmware-upgrade
+LOGFILE=$LOGDIR/dsm-firmware-upgrade.log
+FIRMWARE_DIRECTORY=/usr/share/dsm-firmware
+SLEEP_TIME=60
+
+mkdir -p $LOGDIR
+
+if [ ! -d "$FIRMWARE_DIRECTORY" ]; then
+    echo "Error: Firmware directory '$FIRMWARE_DIRECTORY' does not exist"
+    exit 1
+fi
+
+if [ $(ls -1 "$FIRMWARE_DIRECTORY"/dsm-dsp*.img 2>/dev/null|wc -l) -ne 1 ] ||
+   [ $(ls -1 "$FIRMWARE_DIRECTORY"/dsm-arm*.img 2>/dev/null|wc -l) -ne 1 ]; then
+    echo "Error: wrong number of image files in '$FIRMWARE_DIRECTORY' found. Exiting"
+    exit 1
+fi
+
+echo "" >> $LOGFILE
+date >> $LOGFILE
+f="$FIRMWARE_DIRECTORY"/dsm-dsp*.img
+$UPGRADE -B -f $f -u -D >> $LOGFILE
+DSMS_UPDATED=$?
+if [ $DSMS_UPDATED -eq 0 ]; then
+    echo "No dSMs updated; proceeding with next image" >> $LOGFILE
+else
+    echo "-- Update of $f done ($DSMS_UPDATED dSM(s)), waiting $sleep_time seconds..." >> $LOGFILE
+    sleep $SLEEP_TIME
+fi
+
+# fix config
+dsm_config_update -a -c tcp://localhost:8442
+
+f="$FIRMWARE_DIRECTORY"/dsm-arm*.img
+$UPGRADE -B -f $f -u -D >> $LOGFILE
+DSMS_UPDATED=$?
+if [ $DSMS_UPDATED -eq 0 ]; then
+    echo "No dSMs updated" >> $LOGFILE
+else
+    echo "-- Update of $f done ($DSMS_UPDATED dSM(s))" >> $LOGFILE
+fi
+
+
+exit 0

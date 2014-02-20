@@ -1,0 +1,14 @@
+diff --git a/avahi-autoipd/avahi-autoipd.action.linux b/avahi-autoipd/avahi-autoipd.action.linux
+index 27f00bb..2194be3 100755
+--- a/avahi-autoipd/avahi-autoipd.action.linux
++++ b/avahi-autoipd/avahi-autoipd.action.linux
+@@ -75,4 +75,9 @@ else
+ 
+ fi
+ 
++# restart upnpbeacon if it exists
++if [ -x /etc/init.d/upnpbeacon ]; then
++    /etc/init.d/upnpbeacon restart
++fi
++
+ exit 0
